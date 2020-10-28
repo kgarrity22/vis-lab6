@@ -38,10 +38,6 @@ function AreaChart(container) {// selector for a chart container e.g., ".chart"
     svg.append("g")
         .attr("class", "axis y-axis")
     
-    
-
-
-    
 
     function update(data) {
 
@@ -58,20 +54,20 @@ function AreaChart(container) {// selector for a chart container e.g., ".chart"
             })
             .x(function (d) { 
                 //console.log("date: ", d.date)
-                console.log("X: ", xScale(d.date))
+                //console.log("X: ", xScale(d.date))
                 return xScale(d.date); 
             })
             .y0(function () { 
                 return yScale.range()[0]; 
             })
             .y1(function (d) { 
-                console.log("d.total: ", yScale(d.total))
+                //console.log("d.total: ", yScale(d.total))
                 return yScale(d.total); 
             });
         
             
         
-        console.log("data post: ", data)
+        //console.log("data post: ", data)
         d3.select(".area")
             .datum(data)
             .attr("fill", "pink")
@@ -115,6 +111,10 @@ function StackedAreaChart(container) {
     let yScale = d3.scaleLinear()
         .range([height, 0])
 
+    let color = d3.scaleOrdinal()
+            .range(d3.schemeCategory10)
+                
+
     let xAxis = d3.axisBottom()
         .scale(xScale)
 
@@ -122,8 +122,8 @@ function StackedAreaChart(container) {
         .scale(yScale)
         .ticks(10)
 
-    svg.append("path")
-        .attr("class", "area")
+    // svg.append("path")
+    //     .attr("class", "area")
 
     svg.append("g")
         .attr("class", "axis x-axis")
@@ -134,6 +134,80 @@ function StackedAreaChart(container) {
 
     function update(data) {
 
+        // extract leys for stacking
+        var stack_keys = data.columns.slice(1)
+        console.log("stack-keys: ", stack_keys)
+
+        // compute a stack
+        var stack = d3.stack()
+                    .keys(stack_keys)
+                    .order(d3.stackOrderNone)
+                    .offset(d3.stackOffsetNone);
+
+        
+        //console.log("stack: ", stack);
+
+        var stackedData = stack(data)
+        console.log("series: ", stackedData)
+
+        // update domains for sclaes
+        color.domain(stack_keys)
+
+        xScale.domain(d3.extent(data, d => d.date));
+        //console.log("xscale: ", xScale)
+        //console.log("here: ", d3.extent(data, d => d.date))
+        
+
+        yScale.domain([0, d3.max(stackedData, function(d){
+            return d3.max(d, function(b){
+                    //console.log("b in here is: ", b)
+                    return b[1];
+                });
+        })])
+
+        console.log("yscale domain: ", yScale.domain())
+        console.log("xscale domain is: ", xScale.domain())
+        //console.log(" this too: ", [0, d3.max(stackedData, (a) => d3.max(a, (d) => d[1]))]);
+
+
+        // create an area generator
+        const area = d3.area()
+            .y0(function (d) {
+                
+                return yScale(d[0]);
+            })
+            .y1(function (d) {
+                
+                return yScale(d[1]);
+            })
+            .x(function(d) {
+                
+                return xScale(d.data.date);
+            })
+                    
+                    
+        
+        // create areas based on the stack
+        //console.log(stackedData[0].key)
+        const areas = svg.selectAll(".area")
+            .data(stackedData, function(d) {
+                console.log("d looks like: ", d.key)
+                return d.key;
+            });
+
+        areas.enter() // or you could use join()
+            .append("path")
+            .attr("class", "area")
+            .attr("fill", function(d){
+                return color(d.key);
+            })
+	        .merge(areas)
+            .attr("d", area)
+            areas.exit().remove();
+
+
+        // update axes
+
     }
     return {
         update
@@ -143,7 +217,7 @@ function StackedAreaChart(container) {
 
 d3.csv("unemployment.csv", d => {
     d3.autoType(d);
-    console.log("d: ", d)
+    //console.log("d: ", d)
     d["total"] = Object.values(d).slice(1).reduce(function(a, b){
         return a + b;
     });
@@ -164,9 +238,8 @@ d3.csv("unemployment.csv", d => {
 
     //areaChart1(data);
 
-    //const areaChart2 = AreaChart(".chart-container2");
-
-    //areaChart2(data);
+    const areaChart2 = StackedAreaChart(".chart-container2")
+    areaChart2.update((data));
     
 
 }) // end CSV parsing
