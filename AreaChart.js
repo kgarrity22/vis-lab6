@@ -35,6 +35,7 @@ export default function AreaChart(container) {// selector for a chart container 
 
     svg.append("g")
         .attr("class", "axis y-axis")
+        .attr("height")
 
     const brush = d3.brushX()
                 .extent([[0,0], [width, height]])
@@ -45,8 +46,11 @@ export default function AreaChart(container) {// selector for a chart container 
     console.log("brush: ", brush);
     svg.append("g").attr('class', 'brush').call(brush);
 
+    
+
     function brushed(event) {
         if (event.selection) {
+            console.log("HERE: ", event.selection.map(xScale.invert))
             listeners["brushed"](event.selection.map(xScale.invert));
         }
     }

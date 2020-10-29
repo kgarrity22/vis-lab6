@@ -45,6 +45,12 @@ export default function StackedAreaChart(container) {
         .attr("x", 2)
         .attr("y", 0);
     
+    svg.append("clipPath")
+        .attr("id", "clip")
+        .append("rect")
+        .attr("width", width)// the size of clip-path is the same as
+        .attr("height", height); // the chart area
+    
     
     
 
@@ -126,6 +132,7 @@ export default function StackedAreaChart(container) {
             })
             .merge(areas)
             .attr("d", area)
+            .attr("clip-path", "url(#clip)")
             .on("mouseover", function (event, d, i) {
                 //console.log("D: ", d.key)
                 tooltip.text(d.key)
